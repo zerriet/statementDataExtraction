@@ -1,0 +1,50 @@
+sequenceDiagram
+    participant UI as Human Review Interface
+    participant API as API / Backend
+    participant R as Redis (Task Queue)
+    participant W as Celery Worker
+    participant P as PostgreSQL / S3
+    participant V as Vision Engine (Docling)
+
+    Note over UI, V: Document Ingestion & Processing Phase
+    UI->>API: Upload Income Statement PDF
+    API->>P: Store Raw PDF in S3 & Metadata in DB
+    API->>R: Dispatch 'process_document' task
+    R-->>W: Pick up task
+
+    rect rgb(240, 240, 240)
+    Note over W: 4.1 Ingestion Guard
+    W->>W: Perform Entropy & Text Integrity Check
+    W->>W: Normalize Coordinates (Bottom-Left to Top-Left)
+    end
+
+    rect rgb(230, 245, 255)
+    Note over W: 4.2 Routing Engine
+    W->>W: Evaluate Template Fingerprint & Risk Score
+    end
+
+    alt Deterministic Path (High Confidence)
+        W->>W: Execute Deterministic Parser
+        W->>W: Kerning & Span Repair
+        opt Abort Triggered (e.g., Conflicting Totals)
+            W->>V: Fallback to Vision Engine
+            V-->>W: Return Visual Layout Data
+        end
+    else Vision Path (Low Confidence / Scanned)
+        W->>V: Invoke Vision Parser (Docling)
+        V-->>W: Return Structured Table Representation
+    end
+
+    rect rgb(240, 240, 240)
+    Note over W: 4.5 Validation Engine
+    W->>W: Horizontal & Vertical Arithmetic Checks
+    W->>W: Compute Document Confidence Score
+    W->>P: Persist Extracted Data & Audit Logs
+    end
+
+    Note over UI, P: Maker-Checker Review Phase
+    W-->>API: Task Completed
+    API-->>UI: Update Document Status
+    UI->>P: Fetch Extracted Data + Bounding Boxes
+    UI->>UI: Human Reviewer Approval/Correction
+    UI->>P: Save Final Versioned Result
