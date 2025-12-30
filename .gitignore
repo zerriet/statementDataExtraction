@@ -75,6 +75,9 @@ ipython_config.py
 extracted_data.json
 extracted_data_*.json
 
+# Personal bank statements
+DBS_POSB Consolidated Statement_Oct2025.pdf
+
 # Logs
 *.log
 logs/
