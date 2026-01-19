@@ -99,3 +99,6 @@ dump.rdb
 
 # Claude Code
 .claude/
+
+# GUI (development/testing only)
+gui/

@@ -76,3 +76,11 @@ dev = [
     "jupyter>=1.0.0",            # Jupyter notebook support
     "pip>=24.0",                 # Package installer (required by some notebook tools)
 ]
+
+# ============================================================
+# Script Entry Points
+# ============================================================
+
+[project.scripts]
+# Run medical invoice parser CLI
+parse-invoice = "src.parsers.medical_invoice_parser:main"

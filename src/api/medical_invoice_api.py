@@ -26,20 +26,36 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import sys
 
-# Add parent directory to path for imports (src directory)
-_src_dir = str(Path(__file__).parent.parent)
-if _src_dir not in sys.path:
-    sys.path.insert(0, _src_dir)
+# Add paths for imports - handle both local dev and Azure deployment
+_this_file = Path(__file__).resolve()
+_api_dir = _this_file.parent  # src/api
+_src_dir = _api_dir.parent     # src
+_project_root = _src_dir.parent  # project root
 
-# Try multiple import styles for Azure compatibility
+# Add both src and project root to path for maximum compatibility
+for _path in [str(_src_dir), str(_project_root)]:
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+# Import with explicit error handling
 try:
+    # Try direct import from src directory (when src is in path)
     from parsers.medical_invoice_parser import MedicalInvoiceParser
     from inference.config import InferenceSettings
     from inference.inference_service import InferenceService
-except ImportError:
-    from src.parsers.medical_invoice_parser import MedicalInvoiceParser
-    from src.inference.config import InferenceSettings
-    from src.inference.inference_service import InferenceService
+except ImportError as e1:
+    try:
+        # Try with src prefix (when project root is in path)
+        from src.parsers.medical_invoice_parser import MedicalInvoiceParser
+        from src.inference.config import InferenceSettings
+        from src.inference.inference_service import InferenceService
+    except ImportError as e2:
+        # Log both errors and re-raise with context
+        import logging
+        logging.error(f"Import attempt 1 failed: {e1}")
+        logging.error(f"Import attempt 2 failed: {e2}")
+        logging.error(f"sys.path: {sys.path}")
+        raise ImportError(f"Could not import parser modules. Path: {sys.path}") from e2
 
 logger = logging.getLogger(__name__)
 

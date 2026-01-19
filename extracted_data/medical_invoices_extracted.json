@@ -1,0 +1,82 @@
+[
+  {
+    "extracted": {
+      "invoiceNumber": "INV-2601000859",
+      "visitDate": "2026-01-10",
+      "providerName": "City Osteopathy & Physiotherapy Two Private Limited",
+      "patientName": "Mark Tan Jen Wei",
+      "lineItems": [
+        {
+          "description": "Prescribed Physiotherapy",
+          "amount": 170.0
+        }
+      ],
+      "subtotal": 170.0,
+      "gstAmount": 15.3,
+      "paymentAmount": 185.3,
+      "currency": "SGD",
+      "diagnosisRaw": null
+    },
+    "inference_required": [
+      "diagnosisCode: no diagnosis found in invoice",
+      "benefitType: requires inference from provider name",
+      "benefitCategory: requires inference"
+    ],
+    "metadata": {
+      "success": true,
+      "confidence": 0.9,
+      "warnings": [],
+      "source_file": "invoice1.pdf",
+      "abort_reason": null
+    }
+  },
+  {
+    "extracted": {
+      "invoiceNumber": "H101494",
+      "visitDate": "2025-04-19",
+      "providerName": "ONEDOCTORS FAMILY CLINIC",
+      "patientName": "MARK TAN JEN WEI",
+      "lineItems": [
+        {
+          "description": "Full Consult",
+          "amount": 0.0
+        },
+        {
+          "description": "BEACODYL LINCTUS",
+          "amount": 9.81
+        },
+        {
+          "description": "TELFAST - D TAB",
+          "amount": 9.81
+        },
+        {
+          "description": "CATAFLAM 50MG TAB",
+          "amount": 6.54
+        },
+        {
+          "description": "DIFFLAM THROAT SPRAY",
+          "amount": 19.62
+        }
+      ],
+      "subtotal": 42.0,
+      "gstAmount": 3.78,
+      "paymentAmount": 45.78,
+      "currency": "SGD",
+      "diagnosisRaw": "Acute upper respiratory infection"
+    },
+    "inference_required": [
+      "diagnosisCode: raw text found, needs mapping",
+      "benefitType: requires inference from provider name",
+      "benefitCategory: requires inference"
+    ],
+    "metadata": {
+      "success": true,
+      "confidence": 1.0,
+      "warnings": [
+        "Subtotal calculated from total - gstAmount"
+      ],
+      "source_file": "invoice2.pdf",
+      "abort_reason": null
+    }
+  }
+]

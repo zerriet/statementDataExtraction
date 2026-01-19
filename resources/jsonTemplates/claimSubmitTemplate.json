@@ -1,0 +1,103 @@
+{
+    "claimant": {
+        "fullName": "Mark Tan Jen Wei",
+        "employeeId": "1234",
+        "department": "Group Operations & Technology",
+        "contactInfo": {
+            "email": "zerriet@gmail.com"
+        }
+    },
+    "claimDetails": {
+        "invoiceNumber": "INV-2601000859",
+        "visitDate": "2026-01-10",
+        "benefitCategory": "outpatient",
+        "benefitType": "OC",
+        "benefitTypeDescription": "Outpatient Claim (General Practitioner or Specialist visit)",
+        "providerName": "City Osteopathy & Physiotherapy Two Private Limited",
+        "diagnosisList": [
+            {
+                "diagnosisCode": "F45",
+                "diagnosisDescription": "All Forms of Fracture/Sprain/Pain/Sore/Dislocation/Injury"
+            }
+        ],
+        "subtotal": 170.00,
+        "gstAmount": 15.30,
+        "paymentAmount": 185.30,
+        "currency": "SGD",
+        "dateOfClaim": "2026-01-15",
+        "attachments": [
+            {
+                "fileName": "",
+                "fileType": "",
+                "fileSizeKB": "",
+                "fileContentBase64": ""
+            }
+        ]
+    },
+    "_enums": {
+        "benefitCategory": {
+            "outpatient": {
+                "description": "Outpatient Medical Claims",
+                "benefitTypes": [
+                    {
+                        "code": "OC",
+                        "description": "Outpatient Claim (General Practitioner or Specialist visit)"
+                    },
+                    {
+                        "code": "TCM",
+                        "description": "TCM Practitioner"
+                    }
+                ]
+            },
+            "inpatient": {
+                "description": "Inpatient / Hospitalization Claims",
+                "benefitTypes": [
+                    {
+                        "code": "HSP",
+                        "description": "Hospital Admission"
+                    },
+                    {
+                        "code": "SRG",
+                        "description": "Surgical Procedure"
+                    }
+                ]
+            },
+            "flex": {
+                "description": "Flexible Spending Benefits",
+                "benefitTypes": [
+                    {
+                        "code": "WLN",
+                        "description": "Wellness (Gym, Health Screening)"
+                    },
+                    {
+                        "code": "OPT",
+                        "description": "Optical (Glasses, Contact Lenses)"
+                    },
+                    {
+                        "code": "DNT",
+                        "description": "Dental"
+                    }
+                ]
+            },
+            "others": {
+                "description": "Other Claims",
+                "benefitTypes": [
+                    {
+                        "code": "OTH",
+                        "description": "Other Medical Expenses"
+                    }
+                ]
+            }
+        },
+        "diagnosisCode": [
+            {
+                "code": "F45",
+                "description": "All Forms of Fracture/Sprain/Pain/Sore/Dislocation/Injury"
+            },
+            {
+                "code": "C32",
+                "description": "Flu/Influenza"
+            }
+        ]
+    }
+}

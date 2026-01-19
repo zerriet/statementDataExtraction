@@ -1,0 +1,126 @@
+{
+    "claimant": {
+        "fullName": null,
+        "employeeId": null,
+        "department": null,
+        "contactInfo": {
+            "email": null
+        }
+    },
+    "claimDetails": {
+        "invoiceNumber": null,
+        "visitDate": null,
+        "benefitCategory": null,
+        "benefitType": null,
+        "benefitTypeDescription": null,
+        "providerName": null,
+        "diagnosisRaw": null,
+        "diagnosisList": [
+            {
+                "diagnosisCode": null,
+                "diagnosisDescription": null
+            }
+        ],
+        "subtotal": null,
+        "gstAmount": null,
+        "paymentAmount": null,
+        "currency": "SGD",
+        "dateOfClaim": null,
+        "attachments": [
+            {
+                "fileName": "",
+                "fileType": "",
+                "fileSizeKB": "",
+                "fileContentBase64": ""
+            }
+        ]
+    },
+    "_meta": {
+        "version": "2.0",
+        "description": "Enhanced template with keyword mappings for upstream agent inference",
+        "usage": {
+            "diagnosisRaw": "Raw diagnosis text extracted from invoice PDF. Use _enums.diagnosisCode.keywords to map to code.",
+            "benefitType": "Infer from providerName using _enums.benefitCategory.[category].benefitTypes.keywords"
+        }
+    },
+    "_enums": {
+        "benefitCategory": {
+            "outpatient": {
+                "description": "Outpatient Medical Claims",
+                "keywords": ["clinic", "doctor", "gp", "specialist", "consultation", "consult", "medical centre"],
+                "benefitTypes": [
+                    {
+                        "code": "OC",
+                        "description": "Outpatient Claim (General Practitioner or Specialist visit)",
+                        "keywords": ["clinic", "family clinic", "medical centre", "doctor", "gp", "general practitioner", "specialist", "physiotherapy", "osteopathy", "consultation", "consult"]
+                    },
+                    {
+                        "code": "TCM",
+                        "description": "TCM Practitioner",
+                        "keywords": ["tcm", "traditional chinese medicine", "acupuncture", "chinese medicine", "sinseh", "herbal"]
+                    }
+                ]
+            },
+            "inpatient": {
+                "description": "Inpatient / Hospitalization Claims",
+                "keywords": ["hospital", "ward", "admission", "inpatient", "hospitalization"],
+                "benefitTypes": [
+                    {
+                        "code": "HSP",
+                        "description": "Hospital Admission",
+                        "keywords": ["hospital", "ward", "admission", "inpatient", "hospitalization", "bed"]
+                    },
+                    {
+                        "code": "SRG",
+                        "description": "Surgical Procedure",
+                        "keywords": ["surgery", "surgical", "operation", "procedure", "theatre"]
+                    }
+                ]
+            },
+            "flex": {
+                "description": "Flexible Spending Benefits",
+                "keywords": ["wellness", "gym", "optical", "dental", "health screening"],
+                "benefitTypes": [
+                    {
+                        "code": "WLN",
+                        "description": "Wellness (Gym, Health Screening)",
+                        "keywords": ["gym", "fitness", "health screening", "wellness", "checkup", "annual check"]
+                    },
+                    {
+                        "code": "OPT",
+                        "description": "Optical (Glasses, Contact Lenses)",
+                        "keywords": ["optical", "optometry", "glasses", "spectacles", "contact lens", "eye", "vision"]
+                    },
+                    {
+                        "code": "DNT",
+                        "description": "Dental",
+                        "keywords": ["dental", "dentist", "teeth", "tooth", "oral", "orthodontic"]
+                    }
+                ]
+            },
+            "others": {
+                "description": "Other Claims",
+                "keywords": [],
+                "benefitTypes": [
+                    {
+                        "code": "OTH",
+                        "description": "Other Medical Expenses",
+                        "keywords": []
+                    }
+                ]
+            }
+        },
+        "diagnosisCode": [
+            {
+                "code": "F45",
+                "description": "All Forms of Fracture/Sprain/Pain/Sore/Dislocation/Injury",
+                "keywords": ["fracture", "sprain", "pain", "sore", "dislocation", "injury", "physiotherapy", "rehabilitation", "muscle", "joint", "back pain", "neck pain", "strain", "torn", "ache"]
+            },
+            {
+                "code": "C32",
+                "description": "Flu/Influenza",
+                "keywords": ["flu", "influenza", "respiratory", "cold", "fever", "cough", "sore throat", "runny nose", "infection", "viral", "upper respiratory"]
+            }
+        ]
+    }
+}
