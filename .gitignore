@@ -13,7 +13,7 @@ env/
 .virtualenv
 
 # UV Package Manager
-uv.lock
+# Note: uv.lock SHOULD be committed for reproducible builds
 
 # Distribution / Packaging
 build/
@@ -71,12 +71,14 @@ ipython_config.py
 *~
 .DS_Store
 
-# Project specific
+# Project specific - Generated output files
+extracted_data/
 extracted_data.json
 extracted_data_*.json
 
-# Personal bank statements
-DBS_POSB Consolidated Statement_Oct2025.pdf
+# Personal bank/medical statements (keep PDFs out of repo)
+resources/statements/bank_statements/*.pdf
+resources/statements/medical_invoice_statements/*.pdf
 
 # Logs
 *.log
@@ -102,3 +104,10 @@ dump.rdb
 
 # GUI (development/testing only)
 gui/
+
+# Empty/unused directories
+templateEnums/
+resources/crossReferenceMigrationMaterials/
+
+# Legacy files (not used in Python project)
+resources/dump/

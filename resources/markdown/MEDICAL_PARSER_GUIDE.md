@@ -1,6 +1,6 @@
 # Medical Invoice Parser - Technical Guide
 
-**Version:** 2.1
+**Version:** 2.2
 **Date:** January 2026
 **Purpose:** Learning & System Integration Reference
 
@@ -2190,10 +2190,195 @@ az containerapp logs show \
 
 ---
 
+#### Troubleshooting Azure App Service Deployments
+
+This section documents common issues encountered when deploying to Azure App Service with Git-based deployment (Oryx build system) and their solutions.
+
+##### Problem: Container Exits with Code 1, App Returns 503
+
+**Symptoms:**
+- App Service returns "503 Service Unavailable" or "Application Error"
+- Container logs show `Container has finished running with exit code: 1`
+- Site startup probe fails after ~30 seconds
+
+**Root Cause: Module Import Errors**
+
+Azure's Oryx build system extracts the application to a temporary directory (e.g., `/tmp/8de57103d0cfdd4/`) and sets PYTHONPATH to the virtual environment. This can break Python imports that rely on the working directory structure.
+
+**Debugging Steps:**
+
+1. **Download and examine container logs:**
+   ```bash
+   # Download logs
+   az webapp log download \
+       --name YOUR_APP_NAME \
+       --resource-group YOUR_RESOURCE_GROUP \
+       --log-file /tmp/webapp_logs.zip
+
+   # Extract and read
+   unzip /tmp/webapp_logs.zip -d /tmp/logs
+   cat /tmp/logs/LogFiles/*default_docker.log | tail -100
+   ```
+
+2. **Look for Python import errors:**
+   Common errors include:
+   ```
+   ModuleNotFoundError: No module named 'src.api'
+   ModuleNotFoundError: No module named 'src.parsers'
+   ImportError: cannot import name 'app' from 'src.api'
+   ```
+
+3. **Check the startup command:**
+   ```bash
+   az webapp config show \
+       --name YOUR_APP_NAME \
+       --resource-group YOUR_RESOURCE_GROUP \
+       --query "{startupCommand:appCommandLine, pythonVersion:linuxFxVersion}"
+   ```
+
+**Solution: Robust Import Path Handling**
+
+The fix requires proper Python path configuration in both the entry point and API module.
+
+**Step 1: Create `app.py` (Azure entry point)**
+
+```python
+# app.py - Azure App Service entry point
+import sys
+import os
+
+# Get the directory containing this file
+app_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Add the app directory to Python path (for 'src' imports)
+if app_dir not in sys.path:
+    sys.path.insert(0, app_dir)
+
+# Add the src directory to Python path (for 'parsers', 'inference' imports)
+src_dir = os.path.join(app_dir, 'src')
+if src_dir not in sys.path:
+    sys.path.insert(0, src_dir)
+
+# Import the FastAPI app
+from src.api.medical_invoice_api import app
+
+# Expose the app for uvicorn
+__all__ = ["app"]
+```
+
+**Step 2: Update `src/api/medical_invoice_api.py` imports**
+
+```python
+import sys
+from pathlib import Path
+
+# Add paths for imports - handle both local dev and Azure deployment
+_this_file = Path(__file__).resolve()
+_api_dir = _this_file.parent      # src/api
+_src_dir = _api_dir.parent        # src
+_project_root = _src_dir.parent   # project root
+
+# Add both src and project root to path for maximum compatibility
+for _path in [str(_src_dir), str(_project_root)]:
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+# Import with explicit error handling
+try:
+    # Try direct import from src directory (when src is in path)
+    from parsers.medical_invoice_parser import MedicalInvoiceParser
+    from inference.config import InferenceSettings
+    from inference.inference_service import InferenceService
+except ImportError as e1:
+    try:
+        # Try with src prefix (when project root is in path)
+        from src.parsers.medical_invoice_parser import MedicalInvoiceParser
+        from src.inference.config import InferenceSettings
+        from src.inference.inference_service import InferenceService
+    except ImportError as e2:
+        import logging
+        logging.error(f"Import attempt 1 failed: {e1}")
+        logging.error(f"Import attempt 2 failed: {e2}")
+        logging.error(f"sys.path: {sys.path}")
+        raise ImportError(f"Could not import parser modules. Path: {sys.path}") from e2
+```
+
+**Step 3: Fix circular imports in `src/api/__init__.py`**
+
+```python
+# src/api/__init__.py
+"""API module for medical invoice parsing service"""
+# Note: Import app directly from medical_invoice_api module to avoid circular imports
+__all__ = ["app"]
+```
+
+**Step 4: Set startup command**
+
+```bash
+az webapp config set \
+    --name YOUR_APP_NAME \
+    --resource-group YOUR_RESOURCE_GROUP \
+    --startup-file "python -m uvicorn app:app --host 0.0.0.0 --port 8000"
+```
+
+**Step 5: Ensure `requirements.txt` exists**
+
+Azure App Service doesn't have `uv` pre-installed. Export dependencies:
+
+```bash
+uv export --group api --group llm --no-dev --no-hashes > requirements.txt
+```
+
+**Step 6: Redeploy**
+
+```bash
+git add -A
+git commit -m "Fix Azure import paths"
+git push azure main
+```
+
+##### Understanding Azure's Oryx Build System
+
+Azure App Service uses Oryx for Python deployments:
+
+1. **Source extraction:** Code is copied to `/tmp/<random>/`
+2. **Virtual env creation:** Creates `antenv` in the extraction directory
+3. **Dependency installation:** Runs `pip install -r requirements.txt`
+4. **Compression:** Compresses output to `/home/site/wwwroot/output.tar.gz`
+5. **Runtime extraction:** Extracts to a new temp directory for each container start
+6. **PYTHONPATH override:** Sets path to virtual env site-packages
+
+This means:
+- `/home/site/wwwroot` contains compressed code, NOT the actual runtime files
+- Each container restart extracts to a NEW temp path
+- `sys.path` manipulations in your code must handle this dynamic path
+
+##### Verification
+
+After deployment, verify the app is working:
+
+```bash
+# Check health endpoint
+curl https://YOUR_APP_NAME.azurewebsites.net/health
+
+# Test parse endpoint
+curl -X POST "https://YOUR_APP_NAME.azurewebsites.net/parse?inference=true" \
+    -F "file=@invoice.pdf"
+```
+
+Expected health response:
+```json
+{"status":"healthy","service":"medical-invoice-parser","version":"1.0.0"}
+```
+
+---
+
 ## Appendix A: File Reference
 
 | File | Purpose |
 |------|---------|
+| `app.py` | Azure App Service entry point (path configuration) |
+| `requirements.txt` | Dependencies for Azure (generated from uv) |
 | `src/parsers/medical_invoice_parser.py` | Core parsing logic |
 | `src/api/medical_invoice_api.py` | FastAPI service |
 | `src/inference/__init__.py` | Inference module exports |
@@ -2262,6 +2447,29 @@ cp .env.example .env
 ## 14. Revision History
 
 This section documents significant changes, refactors, and bug fixes for context and reference.
+
+---
+
+### Version 2.2 - January 2026
+
+#### Azure Deployment Fixes
+
+**1. Azure App Service Import Path Resolution**
+- **Files:** `app.py`, `src/api/medical_invoice_api.py`, `src/api/__init__.py`
+- **Issue:** Deployment to Azure App Service via Git (Oryx build) resulted in 503 errors with container exit code 1. The container logs showed `ModuleNotFoundError: No module named 'src.api'` or `No module named 'src.parsers'`.
+- **Root Cause:** Azure's Oryx build system extracts code to dynamic temp directories (`/tmp/<random>/`) and overrides PYTHONPATH to point to the virtual environment. The original import structure assumed a fixed working directory.
+- **Fix:**
+  1. Created `app.py` as Azure entry point that explicitly adds both project root and `src/` to `sys.path`
+  2. Updated `src/api/medical_invoice_api.py` with fallback imports (try `from parsers...` then `from src.parsers...`)
+  3. Removed auto-import from `src/api/__init__.py` to prevent circular import issues
+- **Startup Command:** `python -m uvicorn app:app --host 0.0.0.0 --port 8000`
+- **Documentation:** Added troubleshooting section in 13.5 with step-by-step debugging guide
+
+**2. Requirements.txt Generation**
+- **File:** `requirements.txt`
+- **Issue:** Azure App Service doesn't have `uv` pre-installed, so `uv sync` in startup command failed
+- **Fix:** Generated `requirements.txt` using `uv export --group api --group llm --no-dev --no-hashes`
+- **Note:** Must regenerate when dependencies change
 
 ---
 
@@ -2382,6 +2590,7 @@ This section documents significant changes, refactors, and bug fixes for context
 
 | Version | Files Added | Files Modified |
 |---------|-------------|----------------|
+| 2.2 | `app.py`, `requirements.txt` | `src/api/medical_invoice_api.py`, `src/api/__init__.py`, `MEDICAL_PARSER_GUIDE.md` |
 | 2.1 | `tests/conftest.py`, `tests/test_parser.py`, `tests/test_inference.py`, `tests/test_stress.py`, `tests/test_api.py`, `scripts/run_tests.py` | `src/parsers/medical_invoice_parser.py`, `src/inference/inference_service.py`, `src/inference/keyword_matcher.py`, `gui/index.html` |
 | 2.0 | `src/inference/*.py` (6 files), `.env.example` | `src/api/medical_invoice_api.py`, `gui/index.html`, `MEDICAL_PARSER_GUIDE.md` |
 | 1.0 | Initial codebase | — |
@@ -2396,4 +2605,4 @@ This section documents significant changes, refactors, and bug fixes for context
 
 ---
 
-**End of Medical Parser Guide v2.1**
+**End of Medical Parser Guide v2.2**
